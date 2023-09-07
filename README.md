@@ -15,6 +15,28 @@ I hope it can be useful to someone, if so, I would be happy to hear it.
 
 Regards,
 
+## Usage
+
+Import module and create a `ColorConsole` object, then use it before you print to set color:
+
+```python
+from PythonColorConsole.color_console import ColorConsole
+
+cc = ColorConsole()
+cc.red()
+print("Hello,", end=" ")
+cc.blue()
+print("world", end="")
+cc.bold()
+cc.green()
+print("!")
+cc.reset()
+```
+
+Which will display this:
+
+<pre><font color="#CC0000">Hello, </font><font color="#3465A4">world</font><font color="#4E9A06"><b>!</b></font></pre>
+
 ## Installation
 
 You can use this script in 2 ways:

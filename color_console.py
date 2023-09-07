@@ -483,6 +483,11 @@ class ColorConsole(object):
             pass
 
 
+def test_placeholder():
+    """Makes pytest happy :P"""
+    pass
+
+
 if __name__ == "__main__":
     DEBUG = True
     cc = ColorConsole()

@@ -70,6 +70,9 @@ except NameError:
 # do we print to a terminal or not?
 is_output_atty = sys.stdout.isatty()
 
+# dummy initialization to please lint
+COLORS_DICT = {}
+
 if os.name == "nt":
     from ctypes import windll, Structure, c_short, c_ushort, byref
     SHORT = c_short
@@ -170,27 +173,26 @@ POSIX = 2
 class ColorConsole(object):
     def __init__(self):
         # some forward declaration for linters
-        self.white = None
-        self.black = None
-        self.blue = None
-        self.green = None
-        self.cyan = None
-        self.red = None
-        self.magenta = None
-        self.yellow = None
-        self.grey = None
+        self.white = lambda: None
+        self.black = lambda: None
+        self.blue = lambda: None
+        self.green = lambda: None
+        self.cyan = lambda: None
+        self.red = lambda: None
+        self.magenta = lambda: None
+        self.yellow = lambda: None
+        self.grey = lambda: None
 
         if os.name == "nt":
             self.__mode = NT
             self.__bcp_attrs = self._get_text_attr()
         elif os.name == "posix":
             self.__mode = POSIX
-            self.__hist = list()
+            self.__hist = []
         # copy sys to prevent errors in __del__
         self.__sys = sys
 
-        if os.environ.get("CC_PROGRESS_MODE", None) == "PACMAN":
-            self.progress = self.progress_pacman
+        self.use_pacman_progress = os.environ.get("CC_PROGRESS_MODE", None) == "PACMAN"
 
         for item in COLORS_DICT['FOREGROUND']:
             name = item.lower()
@@ -227,7 +229,7 @@ class ColorConsole(object):
         self.reset()
     if os.name == "posix":
         def reset(self):
-            self.__hist = list()
+            self.__hist = []
             if is_output_atty:
                 self.__sys.stdout.write("\x1b[!p\x1b[?3;4l\x1b[4l\x1b>")
             self._o(10)
@@ -267,6 +269,22 @@ class ColorConsole(object):
     def success(self, *argv):
         if is_output_atty:
             self.green()
+            self.bold()
+        self.message(*argv)
+        if is_output_atty:
+            self.reset()
+
+    def warning(self, *argv):
+        if is_output_atty:
+            self.yellow()
+            self.bold()
+        self.message(*argv)
+        if is_output_atty:
+            self.reset()
+
+    def error(self, *argv):
+        if is_output_atty:
+            self.red()
             self.bold()
         self.message(*argv)
         if is_output_atty:
@@ -337,7 +355,7 @@ class ColorConsole(object):
         def validate_selection(selection):
             if selection is None:
                 return False
-            return all([x in range(len(choices)) for x in selection])
+            return all(x in range(len(choices)) for x in selection)
         assert(validate_selection(default))
         if is_output_atty:
             self.blue()
@@ -345,7 +363,7 @@ class ColorConsole(object):
         res = None
         tail = "[%s]" % " ".join(map(str, default))
         actual_msg = msg + "\n"
-        choices_strings = list()
+        choices_strings = []
         for i, c in enumerate(choices):
             choices_strings.append("%2d - %s " % (i, c))
         choices_per_line = self.get_size()[0] // max(map(len, choices_strings))
@@ -379,23 +397,20 @@ class ColorConsole(object):
             self.reset()
         return res, [choices[x] for x in res]
 
-    def warning(self, *argv):
-        if is_output_atty:
-            self.yellow()
-            self.bold()
-        self.message(*argv)
-        if is_output_atty:
-            self.reset()
-
-    def error(self, *argv):
-        if is_output_atty:
-            self.red()
-            self.bold()
-        self.message(*argv)
-        if is_output_atty:
-            self.reset()
-
     def progress(self, current, maximum=100, display_on_non_tty=False):
+        """
+        Given a current progress value and a maximum, display a progress bar
+        in the terminal.
+        If output is not a terminal and display_on_non_tty is true, then
+        display figures for progress.
+        If the environment variable CC_PROGRESS_MODE" is set to "PACMAN",
+        the progress will be displayed using the Pacman ASCII art.
+        """
+        if self.use_pacman_progress:
+            return self._progress_pacman(current, maximum, display_on_non_tty)
+        return self._progress(current, maximum, display_on_non_tty)
+        
+    def _progress(self, current, maximum=100, display_on_non_tty=False):
         """
         Given a current progress value and a maximum, display a progress bar
         in the terminal.
@@ -430,7 +445,7 @@ class ColorConsole(object):
         elif display_on_non_tty:
             print(progress_txt)
 
-    def progress_pacman(self, current, maximum=100, display_on_non_tty=False):
+    def _progress_pacman(self, current, maximum=100, display_on_non_tty=False):
         """
         Given a current progress value and a maximum, display a progress bar
         in the terminal (using some kind of Pacman ascciart).

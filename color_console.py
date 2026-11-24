@@ -60,8 +60,6 @@ try:
 except Exception as e:
     raise e
 
-DEBUG = False
-
 try:
     input = raw_input
 except NameError:
@@ -171,7 +169,7 @@ POSIX = 2
 
 
 class ColorConsole(object):
-    def __init__(self):
+    def __init__(self, debug=False, indent_size=2):
         # some forward declaration for linters
         self.white = lambda: None
         self.black = lambda: None
@@ -182,6 +180,10 @@ class ColorConsole(object):
         self.magenta = lambda: None
         self.yellow = lambda: None
         self.grey = lambda: None
+        self._use_pacman_progress = os.environ.get("CC_PROGRESS_MODE", None) == "PACMAN"
+        self._debug = debug
+        self._indent_size = indent_size
+        self._indent = 0
 
         if os.name == "nt":
             self.__mode = NT
@@ -192,13 +194,11 @@ class ColorConsole(object):
         # copy sys to prevent errors in __del__
         self.__sys = sys
 
-        self.use_pacman_progress = os.environ.get("CC_PROGRESS_MODE", None) == "PACMAN"
-
         for item in COLORS_DICT['FOREGROUND']:
             name = item.lower()
             value = COLORS_DICT['FOREGROUND'][item] | COLORS_DICT["FG_INTENSITY"]
             exec("self.%s = types.MethodType(lambda x: x._o(%d), self)" % (name, value))
-            if DEBUG:
+            if self._debug:
                 eval("self.%s()" % name)
                 print("Foreground", name)
         self.reset()
@@ -207,10 +207,13 @@ class ColorConsole(object):
             name = 'bg_' + item.lower()
             value = COLORS_DICT['BACKGROUND'][item] | COLORS_DICT["BG_INTENSITY"]
             exec("self.%s = types.MethodType(lambda x: x._o(%d), self)" % (name, value))
-            if DEBUG:
+            if self._debug:
                 eval("self.%s()" % name)
                 print("\nBackground", item, end=' ')
         self.reset()
+
+    def _set_debug(self, debug):
+        self._debug = debug
 
     def get_size(self):
         """ Returns size of the console: Columns, lines """
@@ -263,8 +266,18 @@ class ColorConsole(object):
                 SetConsoleTextAttribute(stdout_handle, color)
             self.__sys.stdout.flush()
 
+    def incr(self, value: int=1):
+        self._indent += value
+        return self
+    
+    def decr(self, value: int=1):
+        self._indent -= value
+        return self
+
     def message(self, *argv):
-        print(" ".join(map(str, argv)), end='')
+        message = " " * (self._indent * self._indent_size) + " ".join(map(str, argv))
+        print(message, end='')
+        return self
 
     def success(self, *argv):
         if is_output_atty:
@@ -273,6 +286,7 @@ class ColorConsole(object):
         self.message(*argv)
         if is_output_atty:
             self.reset()
+        return self
 
     def warning(self, *argv):
         if is_output_atty:
@@ -281,6 +295,7 @@ class ColorConsole(object):
         self.message(*argv)
         if is_output_atty:
             self.reset()
+        return self
 
     def error(self, *argv):
         if is_output_atty:
@@ -289,6 +304,15 @@ class ColorConsole(object):
         self.message(*argv)
         if is_output_atty:
             self.reset()
+        return self
+
+    def debug(self, *argv):
+        if self._debug:
+            self.black()
+            self.message(*argv)
+        if is_output_atty:
+            self.reset()
+        return self
 
     def acknowledgment(self, msg, default=True):
         if is_output_atty:
@@ -406,7 +430,7 @@ class ColorConsole(object):
         If the environment variable CC_PROGRESS_MODE" is set to "PACMAN",
         the progress will be displayed using the Pacman ASCII art.
         """
-        if self.use_pacman_progress:
+        if self._use_pacman_progress:
             return self._progress_pacman(current, maximum, display_on_non_tty)
         return self._progress(current, maximum, display_on_non_tty)
         
@@ -504,13 +528,18 @@ def test_placeholder():
 
 
 if __name__ == "__main__":
-    DEBUG = True
-    cc = ColorConsole()
+    cc = ColorConsole(True)
     print()
     cc.message("simple message\n")
     cc.success("Success message\n")
     cc.warning("Warning message\n")
     cc.error("Error message\n")
+    cc.debug("Debug message\n")
+
+    cc.message("Test indented messages\n")
+    cc.incr().message("- Indented message\n")
+    cc.decr().message("End of indented message\n")
+
     cc.bold()
     print(cc.acknowledgment("OK?", True))
     print(cc.acknowledgment("Cancel?", False))

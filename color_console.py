@@ -167,19 +167,20 @@ elif os.name == "posix":
 NT = 1
 POSIX = 2
 
+SELF_DEBUG = False
 
 class ColorConsole(object):
     def __init__(self, debug=False, indent_size=2):
         # some forward declaration for linters
-        self.white = lambda: None
-        self.black = lambda: None
-        self.blue = lambda: None
-        self.green = lambda: None
-        self.cyan = lambda: None
-        self.red = lambda: None
-        self.magenta = lambda: None
-        self.yellow = lambda: None
-        self.grey = lambda: None
+        self.white = lambda: self
+        self.black = lambda: self
+        self.blue = lambda: self
+        self.green = lambda: self
+        self.cyan = lambda: self
+        self.red = lambda: self
+        self.magenta = lambda: self
+        self.yellow = lambda: self
+        self.grey = lambda: self
         self._use_pacman_progress = os.environ.get("CC_PROGRESS_MODE", None) == "PACMAN"
         self._debug = debug
         self._indent_size = indent_size
@@ -198,7 +199,7 @@ class ColorConsole(object):
             name = item.lower()
             value = COLORS_DICT['FOREGROUND'][item] | COLORS_DICT["FG_INTENSITY"]
             exec("self.%s = types.MethodType(lambda x: x._o(%d), self)" % (name, value))
-            if self._debug:
+            if SELF_DEBUG:
                 eval("self.%s()" % name)
                 print("Foreground", name)
         self.reset()
@@ -207,7 +208,7 @@ class ColorConsole(object):
             name = 'bg_' + item.lower()
             value = COLORS_DICT['BACKGROUND'][item] | COLORS_DICT["BG_INTENSITY"]
             exec("self.%s = types.MethodType(lambda x: x._o(%d), self)" % (name, value))
-            if self._debug:
+            if SELF_DEBUG:
                 eval("self.%s()" % name)
                 print("\nBackground", item, end=' ')
         self.reset()
@@ -238,6 +239,7 @@ class ColorConsole(object):
             self._o(10)
             self._o(0)
             self.__sys.stdout.flush()
+            return self
 
         def __clear_screen(self):
             if is_output_atty:
@@ -250,11 +252,13 @@ class ColorConsole(object):
             if is_output_atty:
                 self.__sys.stdout.write("\x1b[%sm" % (";".join(self.__hist)))
             self.__sys.stdout.flush()
+            return self
 
     elif os.name == "nt":
         def reset(self):
             self._o(self.__bcp_attrs)
             self.__sys.stdout.flush()
+            return self
 
         def _get_text_attr(self):
             csbi = CONSOLE_SCREEN_BUFFER_INFO()
@@ -265,6 +269,7 @@ class ColorConsole(object):
             if is_output_atty:
                 SetConsoleTextAttribute(stdout_handle, color)
             self.__sys.stdout.flush()
+            return self
 
     def incr(self, value: int=1):
         self._indent += value
@@ -281,8 +286,7 @@ class ColorConsole(object):
 
     def success(self, *argv):
         if is_output_atty:
-            self.green()
-            self.bold()
+            self.green().bold()
         self.message(*argv)
         if is_output_atty:
             self.reset()
@@ -290,8 +294,7 @@ class ColorConsole(object):
 
     def warning(self, *argv):
         if is_output_atty:
-            self.yellow()
-            self.bold()
+            self.yellow().bold()
         self.message(*argv)
         if is_output_atty:
             self.reset()
@@ -299,8 +302,7 @@ class ColorConsole(object):
 
     def error(self, *argv):
         if is_output_atty:
-            self.red()
-            self.bold()
+            self.red().bold()
         self.message(*argv)
         if is_output_atty:
             self.reset()
@@ -316,8 +318,7 @@ class ColorConsole(object):
 
     def acknowledgment(self, msg, default=True):
         if is_output_atty:
-            self.blue()
-            self.bold()
+            self.blue().bold()
         res = None
         if default:
             tail = "[Y/n]"
@@ -344,8 +345,7 @@ class ColorConsole(object):
     def choice(self, msg, choices, default=0):
         assert(default in range(len(choices)))
         if is_output_atty:
-            self.blue()
-            self.bold()
+            self.blue().bold()
         res = None
         tail = "[%d]" % default
         actual_msg = msg + "\n"
@@ -382,8 +382,7 @@ class ColorConsole(object):
             return all(x in range(len(choices)) for x in selection)
         assert(validate_selection(default))
         if is_output_atty:
-            self.blue()
-            self.bold()
+            self.blue().bold()
         res = None
         tail = "[%s]" % " ".join(map(str, default))
         actual_msg = msg + "\n"
@@ -443,8 +442,7 @@ class ColorConsole(object):
         """
         progress_txt = "[Progress: %3d/%d]" % (current, maximum)
         if is_output_atty:
-            self.green()
-            self.bold()
+            self.green().bold()
             print("\r" + progress_txt, end="")
             self.reset()
 
@@ -478,8 +476,7 @@ class ColorConsole(object):
         """
         progress_txt = "[Progress: %3d/%d]" % (current, maximum)
         if is_output_atty:
-            self.green()
-            self.bold()
+            self.green().bold()
             print("\r" + progress_txt, end="")
             self.reset()
 
@@ -497,8 +494,7 @@ class ColorConsole(object):
                 # Prints only dots (Pacman already passed through)
                 print(" " + ("\u00B7 " * (progress // 2)), end="")
                 if progress < max_width:
-                    self.bold()
-                    self.yellow()
+                    self.yellow().bold()
                     # Make Pacman close and open (2B24 is large circle,
                     # but doesn't suit monospace)
                     pacman = '\u25CF' if current % 2 == 0 else '\u25D6'
@@ -515,11 +511,12 @@ class ColorConsole(object):
 
     def bold(self):
         if not is_output_atty:
-            return
+            return self
         if os.name == "posix":
             self._o(COLORS_DICT['BOLD'])
         else:
             pass
+        return self
 
 
 def test_placeholder():
@@ -529,7 +526,7 @@ def test_placeholder():
 
 if __name__ == "__main__":
     cc = ColorConsole(True)
-    print()
+    #print()
     cc.message("simple message\n")
     cc.success("Success message\n")
     cc.warning("Warning message\n")

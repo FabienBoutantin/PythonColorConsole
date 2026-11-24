@@ -37,6 +37,16 @@ Which will display this:
 
 <pre><font color="#CC0000">Hello, </font><font color="#3465A4">world</font><font color="#4E9A06"><b>!</b></font></pre>
 
+Formatting, output, indentation, and progress methods return the console, so
+they can also be chained:
+
+```python
+cc.blue().bold().message("Hello\n").reset()
+```
+
+Methods that obtain a value, such as `get_size()`, `acknowledgment()`, and
+`choice()`, continue to return that value.
+
 ## Installation
 
 You can use this script in 2 ways:

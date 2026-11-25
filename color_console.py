@@ -167,10 +167,31 @@ elif os.name == "posix":
 NT = 1
 POSIX = 2
 
+# Debugging flag for internal use within ColorConsole class
+# Allows enabling debug mode for the ColorConsole initialization,
+# while setting the debug flag for individual instances of ColorConsole
+# is intended to control the debugging level for client code.
 SELF_DEBUG = False
 
 class ColorConsole(object):
+    """Write formatted messages and interact with a terminal.
+
+    Provides foreground and background colors, bold text, message helpers,
+    indentation, progress display, and interactive selection prompts. Terminal
+    colors are applied when standard output is connected to a terminal.
+    Color, formatting, message, status, and indentation methods return this
+    instance for chaining. Progress display does not return a value, while
+    interactive prompts return the user's selection.
+    """
+
     def __init__(self, debug=False, indent_size=2):
+        """Create a console helper.
+
+        Args:
+            debug: Whether calls to :meth:`debug` should print their messages.
+            indent_size: Number of spaces added per indentation level in
+                messages.
+        """
         # some forward declaration for linters
         self.white = lambda: self
         self.black = lambda: self

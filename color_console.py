@@ -171,7 +171,7 @@ POSIX = 2
 # Allows enabling debug mode for the ColorConsole initialization,
 # while setting the debug flag for individual instances of ColorConsole
 # is intended to control the debugging level for client code.
-SELF_DEBUG = False
+COLOR_CONSOLE_INIT_DEBUG = False
 
 class ColorConsole(object):
     """Write formatted messages and interact with a terminal.
@@ -220,7 +220,7 @@ class ColorConsole(object):
             name = item.lower()
             value = COLORS_DICT['FOREGROUND'][item] | COLORS_DICT["FG_INTENSITY"]
             exec("self.%s = types.MethodType(lambda x: x._o(%d), self)" % (name, value))
-            if SELF_DEBUG:
+            if COLOR_CONSOLE_INIT_DEBUG:
                 eval("self.%s()" % name)
                 print("Foreground", name)
         self.reset()
@@ -229,7 +229,7 @@ class ColorConsole(object):
             name = 'bg_' + item.lower()
             value = COLORS_DICT['BACKGROUND'][item] | COLORS_DICT["BG_INTENSITY"]
             exec("self.%s = types.MethodType(lambda x: x._o(%d), self)" % (name, value))
-            if SELF_DEBUG:
+            if COLOR_CONSOLE_INIT_DEBUG:
                 eval("self.%s()" % name)
                 print("\nBackground", item, end=' ')
         self.reset()

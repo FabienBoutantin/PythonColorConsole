@@ -547,7 +547,7 @@ def test_placeholder():
 
 if __name__ == "__main__":
     cc = ColorConsole(True)
-    #print()
+    print()
     cc.message("simple message\n")
     cc.success("Success message\n")
     cc.warning("Warning message\n")

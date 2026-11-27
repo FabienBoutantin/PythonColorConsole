@@ -42,6 +42,7 @@ they can also be chained:
 
 ```python
 cc.blue().bold().message("Hello\n").reset()
+cc.blue().message("Hello ").red().message("world!\n").reset()
 ```
 
 Methods that obtain a value, such as `get_size()`, `acknowledgment()`, and

@@ -253,32 +253,40 @@ class ColorConsole(object):
     def __del__(self):
         self.reset()
     if os.name == "posix":
+        def flush(self):
+            self.__sys.stdout.flush()
+            return self
+
         def reset(self):
+            self.__sys.stdout.flush()
             self.__hist = []
             if is_output_atty:
                 self.__sys.stdout.write("\x1b[!p\x1b[?3;4l\x1b[4l\x1b>")
             self._o(10)
             self._o(0)
-            self.__sys.stdout.flush()
             return self
 
         def __clear_screen(self):
+            self.__sys.stdout.flush()
             if is_output_atty:
                 self.__sys.stdout.write("\x1b[H\x1b[2J")
-            self.__sys.stdout.flush()
 
         def _o(self, msg):
+            self.__sys.stdout.flush()
             msg = "%02i" % msg
             self.__hist.append(msg)
             if is_output_atty:
                 self.__sys.stdout.write("\x1b[%sm" % (";".join(self.__hist)))
-            self.__sys.stdout.flush()
             return self
 
     elif os.name == "nt":
-        def reset(self):
-            self._o(self.__bcp_attrs)
+        def flush(self):
             self.__sys.stdout.flush()
+            return self
+        
+        def reset(self):
+            self.__sys.stdout.flush()
+            self._o(self.__bcp_attrs)
             return self
 
         def _get_text_attr(self):
@@ -287,9 +295,16 @@ class ColorConsole(object):
             return csbi.wAttributes
 
         def _o(self, color):
+            self.__sys.stdout.flush()
             if is_output_atty:
                 SetConsoleTextAttribute(stdout_handle, color)
-            self.__sys.stdout.flush()
+            return self
+
+    else:
+        def flush(self):
+            return self
+
+        def reset(self):
             return self
 
     def incr(self, value: int=1):
